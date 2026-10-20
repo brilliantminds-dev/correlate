@@ -1,0 +1,62 @@
+version: 2
+includes:
+
+  version: '3'
+
+  tasks:
+    format:
+      desc: "format code"
+      cmds:
+        - go fmt ./...
+    quality:
+      deps: [ format ]
+      desc: "Quality checks"
+      cmds:
+        - go vet ./...
+        - pre-commit --all-files
+    test:
+      deps: [ quality ]
+      desc: "Run unit test w/ coverage"
+      cmds:
+        - go test -v -cover ./...
+
+    add:
+      deps: [ test ]
+      desc: "add recent code"
+      cmds:
+        - git add -u
+        - git add .
+    commit:
+      deps: [ add ]
+      desc: "Commit code"
+      cmds:
+        - vars: { MSG: { sh: 'read -p "Enter a commit msg' } }
+        - |
+          if [ -z "{{.MSG}}" ]; then
+            echo "Error: please enter a commit msg."
+            exit 1
+          fi
+        - echo "Creating Commit with message '{{.MSG}}'..."
+    tag:
+      deps: [ commit ]
+      desc: Create a semantic version Git tag by prompting for version segments and a message.
+      cmds:
+        - vars: { MAJOR: { sh: 'read -p "Enter MAJOR version: " major && echo $major' } }
+        - vars: { MINOR: { sh: 'read -p "Enter MINOR version: " minor && echo $minor' } }
+        - vars: { PATCH: { sh: 'read -p "Enter PATCH version: " patch && echo $patch' } }
+        - vars: { MSG: { sh: 'read -p "Enter tag message: " msg && echo "$msg"' } }
+        - vars: { VERSION: 'v{{.MAJOR}}.{{.MINOR}}.{{.PATCH}}' }
+        - vars: { FINAL_MSG: '{{if .MSG}}{{.MSG}}{{else}}Release {{.VERSION}}{{end}}' }
+        - |
+          if [ -z "{{.MAJOR}}" ] || [ -z "{{.MINOR}}" ] || [ -z "{{.PATCH}}" ]; then
+            echo "Error: MAJOR, MINOR, and PATCH versions are all required."
+            exit 1
+          fi
+        - echo "Creating tag {{.VERSION}} with message '{{.FINAL_MSG}}'..."
+        - git tag -a "{{.VERSION}}" -m "{{.FINAL_MSG}}"
+        - echo "Tag {{.VERSION}} created locally. Run 'git push origin {{.VERSION}}' to deploy."
+
+      release:
+        deps: [ tag ]
+        cmds:
+          - git push --tags {{.VERSION}}

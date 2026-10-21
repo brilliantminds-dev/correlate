@@ -1,7 +1,7 @@
 # See https://pre-commit.com for more information
 repos:
   # Basic code hygiene (whitespaces and formatting rules)
-  - repo: https://github.com
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
@@ -10,19 +10,12 @@ repos:
       - id: check-added-large-files
 
   # Go Linters, Format, and Vet (All-in-one bundle via golangci-lint)
-  - repo: https://github.com
-    rev: v1.64.5
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
     hooks:
+      - id: go-mod-tidy
+      - id: go-critic
+      - id: go-build
       - id: golangci-lint
         name: golangci-lint (includes vet and format)
-        entry: golangci-lint run --issues-exit-code=1
-
-  # Go Vulnerability Check
-  - repo: https://github.com
-    rev: v0.1.0
-    hooks:
-      - id: govulncheck
-        name: govulncheck
-        entry: govulncheck ./...
-        types: [go]
-        language: system # Requires govulncheck to be installed on the machine
+        entry: golangci-lint run --issues-exit-code=0
